@@ -440,7 +440,7 @@
     .log-header h3 { font-size: 1.1rem; font-weight: 800; color: #111; }
     .log-header .log-count { font-size: 0.8rem; color: #aaa; font-weight: 500; }
 
-    .log-table-wrap { overflow-x: auto; }
+    .log-table-wrap { overflow-x: auto; overflow-y: auto; max-height: 400px; }
 
     table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
 
@@ -454,6 +454,9 @@
       text-transform: uppercase;
       color: #bbb;
       border-bottom: 1px solid #f0f0f0;
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
 
     thead th:last-child { text-align: right; padding-right: 36px; }
@@ -673,10 +676,10 @@
       </div>
       <div class="stat-card">
         <div class="card-glow glow-blue"></div>
-        <div class="stat-icon">📅</div>
-        <div class="stat-label">Days In</div>
+        <div class="stat-icon">⏱️</div>
+        <div class="stat-label">Hours Played</div>
         <div class="stat-value" id="days-display">—</div>
-        <div class="stat-note">since May 29, 2026</div>
+        <div class="stat-note">total time at the table</div>
       </div>
       <div class="stat-card">
         <div class="card-glow glow-amber"></div>
@@ -735,7 +738,7 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>Date</th>
+              <th>Day</th>
               <th>Hours</th>
               <th>Session P&L</th>
               <th>Running Total</th>
@@ -884,14 +887,22 @@
     // Loss:    { date: 'YYYY-MM-DD', hours: 4,   profit: -180 },
     // ================================================================
     const sessions = [
-      // { date: '2026-05-29', hours: 4, profit: 250 },
+      { date: '2026-05-25', hours: 2.58, profit: 405 },
+      { date: '2026-05-26', hours: 5.42, profit: 657 },
+      { date: '2026-05-28', hours: 9.28, profit: 272 },
+      { date: '2026-05-29', hours: 5.85, profit: 301 },
+      { date: '2026-05-30', hours: 3.87, profit: 261 },
+      { date: '2026-05-30', hours: 5.10, profit: -326 },
+      { date: '2026-06-04', hours: 6.07, profit: -85 },
+      { date: '2026-06-05', hours: 5.63, profit: -600 },
+      { date: '2026-06-07', hours: 6.55, profit: -600 },
     ];
 
     const GOAL = 10000;
     const START_DATE = new Date('2026-05-29T00:00:00');
 
     const totalProfit = sessions.reduce((sum, s) => sum + s.profit, 0);
-    const days        = Math.floor((new Date() - START_DATE) / 864e5);
+    const totalHours  = sessions.reduce((sum, s) => sum + s.hours, 0);
     const pct         = Math.min((totalProfit / GOAL) * 100, 100);
     const remaining   = Math.max(GOAL - totalProfit, 0);
     const bestSession = sessions.length ? Math.max(...sessions.map(s => s.profit)) : null;
@@ -900,7 +911,7 @@
     const fmtD = d => d + (d === 1 ? ' day' : ' days');
 
     document.getElementById('profit-display').textContent    = fmt(totalProfit);
-    document.getElementById('days-display').textContent      = fmtD(days);
+    document.getElementById('days-display').textContent      = totalHours.toFixed(1) + 'h';
     document.getElementById('remaining-display').textContent = fmt(remaining);
     document.getElementById('sessions-display').textContent  = sessions.length;
     document.getElementById('best-session-note').textContent = bestSession !== null ? 'Best: ' + fmt(bestSession) : 'Best: —';
@@ -920,17 +931,16 @@
       withRunning.forEach(s => {
         const plClass = s.profit >= 0 ? 'profit-pos' : 'profit-neg';
         const rtClass = s.running >= 0 ? 'running-pos' : 'running-neg';
-        const dateStr = new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        tbody.innerHTML += `<tr><td>#${s.num}</td><td>${dateStr}</td><td>${s.hours}h</td><td class="${plClass}">${fmt(s.profit)}</td><td class="running-total ${rtClass}">${fmt(s.running)}</td></tr>`;
+        tbody.innerHTML += `<tr><td>#${s.num}</td><td>Day ${s.num}</td><td>${s.hours}h</td><td class="${plClass}">${fmt(s.profit)}</td><td class="running-total ${rtClass}">${fmt(s.running)}</td></tr>`;
       });
 
       document.getElementById('chart-empty').style.display = 'none';
       const canvas = document.getElementById('profitChart');
       canvas.style.display = 'block';
       let run = 0;
-      const labels = [new Date(START_DATE).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })];
+      const labels = ['Start'];
       const data   = [0];
-      chron.forEach(s => { run += s.profit; labels.push(new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })); data.push(run); });
+      chron.forEach((s, i) => { run += s.profit; labels.push('Day ' + (i + 1)); data.push(run); });
       const ctx  = canvas.getContext('2d');
       const grad = ctx.createLinearGradient(0, 0, 0, 300);
       grad.addColorStop(0, 'rgba(0,200,150,0.25)');
