@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>$1/$3 Poker Challenge — Road to $10,000</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+    /* ================================================================
+       HOW TO LOG A SESSION:
+       Find the sessions array in the <script> at the bottom.
+       Add a new line for each session you play:
+         { date: 'YYYY-MM-DD', hours: 3.5, profit: 250 },
+       Use a negative number for losing sessions:
+         { date: '2026-06-01', hours: 4, profit: -180 },
+       Save the file — everything (stats, chart, table) updates automatically.
+       ================================================================ */
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #f4f4f0;
+      color: #111;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 40px;
+      background: #fff;
+      border-bottom: 1px solid #e8e8e8;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      gap: 12px;
+    }
+
+    .nav-brand {
+      font-weight: 800;
+      font-size: 1rem;
+      color: #111;
+      text-decoration: none;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-pill {
+      background: linear-gradient(135deg, #00c896, #0ea5e9);
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 6px 16px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 18px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #555;
+      background: #fff;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .share-btn:hover { border-color: #00c896; color: #00c896; }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #0c4a6e 70%, #065f46 100%);
+      padding: 80px 40px 90px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(0,200,150,0.25) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -80px; left: -40px;
+      width: 350px; height: 350px;
+      background: radial-gradient(circle, rgba(14,165,233,0.2) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .hero-inner {
+      max-width: 1000px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      padding: 7px 16px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    .hero-badge .dot {
+      width: 7px; height: 7px;
+      background: #00c896;
+      border-radius: 50%;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .hero h1 {
+      font-size: clamp(2.8rem, 7vw, 5.5rem);
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 .accent {
+      background: linear-gradient(90deg, #00c896, #0ea5e9);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.7;
+      max-width: 540px;
+      margin-bottom: 36px;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #00c896, #0ea5e9);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.9rem;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.2s;
+      box-shadow: 0 4px 20px rgba(0,200,150,0.35);
+    }
+
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .btn-secondary:hover { background: rgba(255,255,255,0.18); }
+
+    /* ── STATS ── */
+    .stats-section {
+      max-width: 1000px;
+      margin: -36px auto 0;
+      padding: 0 40px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .stat-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 24px 22px 20px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      border: 1px solid #efefef;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card .card-glow {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: 20px 20px 0 0;
+    }
+
+    .glow-green  { background: linear-gradient(90deg, #00c896, #34d399); }
+    .glow-blue   { background: linear-gradient(90deg, #0ea5e9, #818cf8); }
+    .glow-amber  { background: linear-gradient(90deg, #f59e0b, #f97316); }
+    .glow-purple { background: linear-gradient(90deg, #8b5cf6, #ec4899); }
+
+    .stat-icon  { font-size: 1.4rem; margin-bottom: 10px; }
+    .stat-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-size: clamp(1.5rem, 2.5vw, 2rem);
+      font-weight: 800;
+      color: #111;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .stat-note {
+      margin-top: 5px;
+      font-size: 0.74rem;
+      color: #bbb;
+    }
+
+    /* ── SECTION SHARED ── */
+    .section-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #00c896;
+      margin-bottom: 16px;
+    }
+
+    .section-eyebrow::before {
+      content: '';
+      display: block;
+      width: 24px; height: 2px;
+      background: #00c896;
+      border-radius: 2px;
+    }
+
+    /* ── PROGRESS ── */
+    .progress-section {
+      max-width: 1000px;
+      margin: 60px auto 0;
+      padding: 0 40px;
+    }
+
+    .progress-card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 36px 40px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      border: 1px solid #efefef;
+    }
+
+    .progress-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .progress-top h3 {
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #111;
+    }
+
+    .progress-top h3 span {
+      background: linear-gradient(135deg, #00c896, #0ea5e9);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .goal-tag {
+      background: #f4f4f0;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #666;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 18px;
+      background: #f0f0f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00c896, #0ea5e9);
+      border-radius: 999px;
+      transition: width 1.4s cubic-bezier(0.4,0,0.2,1);
+      position: relative;
+      min-width: 0;
+    }
+
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shimmer 2.5s infinite;
+    }
+
+    @keyframes shimmer {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: #aaa;
+      font-weight: 500;
+    }
+
+    .progress-meta .pct-label {
+      font-weight: 700;
+      color: #00c896;
+      font-size: 0.9rem;
+    }
+
+    /* ── CHART ── */
+    .chart-section {
+      max-width: 1000px;
+      margin: 60px auto 0;
+      padding: 0 40px;
+    }
+
+    .chart-card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 36px 40px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      border: 1px solid #efefef;
+    }
+
+    .chart-card canvas { display: block; }
+
+    .chart-empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: #ccc;
+      font-size: 0.95rem;
+    }
+
+    .chart-empty .chart-empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+    /* ── SESSION LOG ── */
+    .log-section {
+      max-width: 1000px;
+      margin: 60px auto 0;
+      padding: 0 40px;
+    }
+
+    .log-card {
+      background: #fff;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      border: 1px solid #efefef;
+    }
+
+    .log-header {
+      padding: 28px 36px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .log-header h3 { font-size: 1.1rem; font-weight: 800; color: #111; }
+    .log-header .log-count { font-size: 0.8rem; color: #aaa; font-weight: 500; }
+
+    .log-table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+
+    thead th {
+      background: #fafafa;
+      padding: 12px 20px;
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #bbb;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    thead th:last-child { text-align: right; padding-right: 36px; }
+    thead th:first-child { padding-left: 36px; }
+
+    tbody tr { border-bottom: 1px solid #f7f7f7; transition: background 0.15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #fafffe; }
+
+    tbody td { padding: 16px 20px; color: #333; font-weight: 500; }
+    tbody td:first-child { padding-left: 36px; color: #999; font-size: 0.8rem; }
+    tbody td:last-child  { text-align: right; padding-right: 36px; font-weight: 700; font-size: 0.92rem; }
+
+    .profit-pos { color: #00a676; }
+    .profit-neg { color: #ef4444; }
+    .running-total { font-size: 0.82rem; font-weight: 600; }
+    .running-pos { color: #00a676; }
+    .running-neg { color: #ef4444; }
+
+    .log-empty { text-align: center; padding: 48px 20px; color: #ccc; font-size: 0.9rem; }
+
+    /* ── VIDEO ── */
+    .video-section { max-width: 1000px; margin: 60px auto 0; padding: 0 40px; }
+
+    .video-card { background: #fff; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.07); border: 1px solid #efefef; }
+
+    .video-card-header {
+      padding: 28px 32px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .video-card-header h3 { font-size: 1.1rem; font-weight: 800; color: #111; }
+    .video-card-header p  { font-size: 0.82rem; color: #aaa; margin-top: 3px; }
+
+    .play-badge { background: linear-gradient(135deg, #00c896, #0ea5e9); color: #fff; font-size: 0.75rem; font-weight: 700; padding: 6px 14px; border-radius: 999px; letter-spacing: 0.04em; }
+
+    .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; }
+    .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+
+    /* ── RULES ── */
+    .rules-section { max-width: 1000px; margin: 60px auto 0; padding: 0 40px; }
+
+    .rules-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+    .rule-card { background: #fff; border-radius: 20px; padding: 28px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); border: 1px solid #efefef; position: relative; overflow: hidden; }
+    .rule-card .card-glow { position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 20px 20px 0 0; }
+    .rule-icon { font-size: 1.8rem; margin-bottom: 14px; }
+    .rule-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #aaa; margin-bottom: 8px; }
+    .rule-title { font-size: 1.05rem; font-weight: 800; color: #111; letter-spacing: -0.01em; margin-bottom: 8px; }
+    .rule-desc { font-size: 0.85rem; color: #888; line-height: 1.6; }
+
+    /* ── BIO ── */
+    .bio-section { max-width: 1000px; margin: 60px auto 0; padding: 0 40px; }
+
+    .bio-card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 48px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      border: 1px solid #efefef;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 52px;
+      align-items: start;
+    }
+
+    .bio-photo-wrap { position: relative; }
+
+    .bio-photo { width: 100%; border-radius: 18px; display: block; object-fit: cover; aspect-ratio: 3/4; background: #f0f0f0; }
+
+    .bio-photo-badge {
+      position: absolute;
+      bottom: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #00c896, #0ea5e9);
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 7px 18px;
+      border-radius: 999px;
+      white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(0,200,150,0.35);
+    }
+
+    .bio-content { padding-top: 4px; }
+
+    .bio-content h2 { font-size: clamp(1.7rem, 3vw, 2.3rem); font-weight: 800; color: #111; letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 22px; }
+
+    .bio-content p { font-size: 0.97rem; line-height: 1.78; color: #666; margin-bottom: 16px; }
+    .bio-content p strong { color: #111; font-weight: 700; }
+    .bio-content p:last-of-type { margin-bottom: 32px; }
+
+    .bio-stats { display: flex; gap: 32px; padding-top: 28px; border-top: 1px solid #f0f0f0; flex-wrap: wrap; }
+    .bio-stat { display: flex; flex-direction: column; gap: 4px; }
+
+    .bio-stat-value {
+      font-size: 1.8rem; font-weight: 800; color: #111; letter-spacing: -0.03em; line-height: 1;
+      background: linear-gradient(135deg, #00c896, #0ea5e9);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .bio-stat-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #aaa; }
+
+    /* ── CONNECT ── */
+    .connect-section { max-width: 1000px; margin: 60px auto 0; padding: 0 40px; }
+    .connect-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    .connect-card { background: #fff; border-radius: 24px; padding: 36px; box-shadow: 0 4px 24px rgba(0,0,0,0.07); border: 1px solid #efefef; position: relative; overflow: hidden; }
+    .connect-card-icon { font-size: 2rem; margin-bottom: 14px; }
+    .connect-card h3 { font-size: 1.25rem; font-weight: 800; color: #111; letter-spacing: -0.02em; margin-bottom: 10px; }
+    .connect-card > p { font-size: 0.9rem; line-height: 1.65; color: #888; margin-bottom: 24px; }
+
+    .social-buttons { display: flex; flex-direction: column; gap: 12px; }
+
+    .social-btn { display: flex; align-items: center; gap: 10px; padding: 13px 20px; border-radius: 14px; font-size: 0.88rem; font-weight: 700; text-decoration: none; transition: transform 0.15s, opacity 0.15s; }
+    .social-btn:hover { transform: translateY(-2px); opacity: 0.92; }
+    .instagram-btn { background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: #fff; }
+    .youtube-btn   { background: #ff0000; color: #fff; }
+
+    .email-input-row { display: flex; gap: 10px; }
+
+    .email-input-row input { flex: 1; padding: 13px 18px; border: 1.5px solid #e8e8e8; border-radius: 14px; font-size: 0.88rem; font-family: 'Plus Jakarta Sans', sans-serif; color: #111; outline: none; transition: border-color 0.2s; background: #fafafa; }
+    .email-input-row input:focus { border-color: #00c896; background: #fff; }
+
+    .email-input-row button { padding: 13px 22px; background: linear-gradient(135deg, #00c896, #0ea5e9); color: #fff; font-weight: 700; font-size: 0.88rem; font-family: 'Plus Jakarta Sans', sans-serif; border: none; border-radius: 14px; cursor: pointer; white-space: nowrap; transition: opacity 0.2s, transform 0.15s; box-shadow: 0 4px 14px rgba(0,200,150,0.3); }
+    .email-input-row button:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .email-disclaimer { margin-top: 10px !important; font-size: 0.75rem !important; color: #ccc !important; margin-bottom: 0 !important; }
+
+    /* ── ABOUT ── */
+    .about-section { max-width: 1000px; margin: 60px auto 0; padding: 0 40px; }
+
+    .about-card { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #065f46 100%); border-radius: 24px; padding: 52px; position: relative; overflow: hidden; }
+    .about-card::before { content: '♠'; position: absolute; right: -20px; top: -20px; font-size: 220px; color: rgba(255,255,255,0.03); line-height: 1; }
+    .about-card .section-eyebrow { color: #00c896; margin-bottom: 16px; }
+    .about-card .section-eyebrow::before { background: #00c896; }
+    .about-card h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800; color: #fff; letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 18px; }
+    .about-card h2 span { background: linear-gradient(90deg, #00c896, #0ea5e9); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .about-card p { font-size: 1.05rem; line-height: 1.75; color: rgba(255,255,255,0.65); max-width: 600px; }
+    .about-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 28px; }
+    .chip { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); padding: 7px 16px; border-radius: 999px; font-size: 0.82rem; font-weight: 600; }
+
+    /* ── FOOTER ── */
+    footer { max-width: 1000px; margin: 60px auto 0; padding: 32px 40px 48px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e8e8e8; flex-wrap: wrap; gap: 10px; }
+    footer .f-brand { font-weight: 800; font-size: 0.9rem; color: #111; }
+    footer p { font-size: 0.8rem; color: #bbb; }
+
+    /* ── TOAST ── */
+    .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: #111; color: #fff; padding: 12px 24px; border-radius: 999px; font-size: 0.85rem; font-weight: 600; transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1); z-index: 9999; white-space: nowrap; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 760px) {
+      nav { padding: 16px 20px; }
+      .hero { padding: 60px 20px 80px; }
+      .stats-section { padding: 0 20px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .progress-section, .chart-section, .log-section, .video-section, .rules-section, .connect-section, .about-section, .bio-section { padding: 0 20px; }
+      .progress-card, .chart-card, .about-card { padding: 24px 20px; }
+      .rules-grid { grid-template-columns: 1fr; }
+      .connect-grid { grid-template-columns: 1fr; }
+      .email-input-row { flex-direction: column; }
+      footer { padding: 28px 20px 40px; flex-direction: column; text-align: center; }
+      thead th:first-child { padding-left: 20px; }
+      thead th:last-child  { padding-right: 20px; }
+      tbody td:first-child { padding-left: 20px; }
+      tbody td:last-child  { padding-right: 20px; }
+      .log-header { padding: 22px 20px 16px; }
+      .bio-card { grid-template-columns: 1fr; gap: 40px; padding: 28px; }
+      .bio-photo { aspect-ratio: 4/3; }
+      .bio-photo-badge { bottom: -12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="nav-brand" href="#">$1/$3 Poker Challenge</a>
+    <div class="nav-right">
+      <button class="share-btn" onclick="shareChallenge()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
+        Share
+      </button>
+      <span class="nav-pill">🃏 Live</span>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge"><span class="dot"></span>Challenge in progress</div>
+      <h1>Grinding to<br><span class="accent">$10,000</span><br>one hand at a time.</h1>
+      <p>Starting at $1/$3 No-Limit Hold'em — tracking every session, every dollar, every step of the way to $10,000 in profit.</p>
+      <div class="hero-buttons">
+        <a href="#progress" class="btn-primary">📈 Track Progress</a>
+        <a href="#video" class="btn-secondary">▶ Watch the Video</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="card-glow glow-green"></div>
+        <div class="stat-icon">💰</div>
+        <div class="stat-label">Total Profit</div>
+        <div class="stat-value" id="profit-display">$0</div>
+        <div class="stat-note">of $10,000 goal</div>
+      </div>
+      <div class="stat-card">
+        <div class="card-glow glow-blue"></div>
+        <div class="stat-icon">📅</div>
+        <div class="stat-label">Days In</div>
+        <div class="stat-value" id="days-display">—</div>
+        <div class="stat-note">since May 29, 2026</div>
+      </div>
+      <div class="stat-card">
+        <div class="card-glow glow-amber"></div>
+        <div class="stat-icon">🎯</div>
+        <div class="stat-label">Still Needed</div>
+        <div class="stat-value" id="remaining-display">$10,000</div>
+        <div class="stat-note">to hit the goal</div>
+      </div>
+      <div class="stat-card">
+        <div class="card-glow glow-purple"></div>
+        <div class="stat-icon">🃏</div>
+        <div class="stat-label">Sessions Played</div>
+        <div class="stat-value" id="sessions-display">0</div>
+        <div class="stat-note" id="best-session-note">Best: —</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="progress-section" id="progress">
+    <div class="section-eyebrow">Progress Tracker</div>
+    <div class="progress-card">
+      <div class="progress-top">
+        <h3><span id="progress-current">$0</span> to goal</h3>
+        <span class="goal-tag">🏆 Goal: $10,000</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+      <div class="progress-meta">
+        <span id="remaining-inline">$10,000 remaining</span>
+        <span class="pct-label" id="pct-display">0% complete</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="chart-section">
+    <div class="section-eyebrow">Profit Over Time</div>
+    <div class="chart-card">
+      <div class="chart-empty" id="chart-empty">
+        <div class="chart-empty-icon">📊</div>
+        <div>No sessions logged yet — the chart will appear after your first session.</div>
+      </div>
+      <canvas id="profitChart" style="display:none;"></canvas>
+    </div>
+  </section>
+
+  <section class="log-section">
+    <div class="section-eyebrow">Session Log</div>
+    <div class="log-card">
+      <div class="log-header">
+        <h3>All Sessions</h3>
+        <span class="log-count" id="log-count">0 sessions logged</span>
+      </div>
+      <div class="log-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Hours</th>
+              <th>Session P&L</th>
+              <th>Running Total</th>
+            </tr>
+          </thead>
+          <tbody id="session-tbody">
+            <tr><td colspan="5"><div class="log-empty">No sessions yet — add your first session to see it here.</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="video-section" id="video">
+    <div class="section-eyebrow">Watch</div>
+    <div class="video-card">
+      <div class="video-card-header">
+        <div>
+          <h3>The Challenge Begins</h3>
+          <p>Watch the video that started it all</p>
+        </div>
+        <span class="play-badge">▶ YouTube</span>
+      </div>
+      <div class="video-wrapper">
+        <iframe src="https://www.youtube.com/embed/e8Gsv2xNPDk" title="$1/$3 Poker Challenge" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    </div>
+  </section>
+
+  <section class="rules-section" id="rules">
+    <div class="section-eyebrow">The Rules</div>
+    <div class="rules-grid">
+      <div class="rule-card">
+        <div class="card-glow glow-blue"></div>
+        <div class="rule-icon">🎰</div>
+        <div class="rule-label">Game</div>
+        <div class="rule-title">$1/$3 No-Limit Hold'em Only</div>
+        <div class="rule-desc">The challenge is played exclusively at $1/$3 NLHE. No other stakes, no other formats — just the one table where it all counts.</div>
+      </div>
+      <div class="rule-card">
+        <div class="card-glow glow-green"></div>
+        <div class="rule-icon">🪙</div>
+        <div class="rule-label">Buy-In</div>
+        <div class="rule-title">100 Big Blinds — $300</div>
+        <div class="rule-desc">Every session starts with a standard 100 big blind buy-in of $300. Consistent buy-ins keep the tracking clean and the challenge honest.</div>
+      </div>
+      <div class="rule-card">
+        <div class="card-glow glow-amber"></div>
+        <div class="rule-icon">🛑</div>
+        <div class="rule-label">Stop Loss</div>
+        <div class="rule-title">$600 Per Session</div>
+        <div class="rule-desc">A hard stop loss of $600 per session protects the bankroll. If losses hit $600, the session ends — no exceptions, no chasing.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="bio-section">
+    <div class="section-eyebrow">Meet Lindsay</div>
+    <div class="bio-card">
+      <div class="bio-photo-wrap">
+        <img src="lindsay.jpg" alt="Lindsay at the poker table" class="bio-photo" />
+        <div class="bio-photo-badge">🃏 Pro since 2013</div>
+      </div>
+      <div class="bio-content">
+        <h2>Born in Hawaiʻi.<br>Built in Vegas.</h2>
+        <p>Lindsay grew up in Hawaiʻi before making the bold move to Las Vegas at 22 — not to visit, but to chase a dream. For the past <strong>13 years</strong>, she has been a full-time professional poker player, competing at some of the highest stakes in the game.</p>
+        <p>Her home game is <strong>$2/$5 No-Limit Hold'em</strong>, but she has tested herself at stakes as high as <strong>$100/$200/$200 NLH</strong> — a level few players ever reach. Over the years she has split her time between the cash game grind and the tournament circuit, building a reputation as a versatile, battle-tested competitor.</p>
+        <p>Right now she is locked in on cash games exclusively — and the <strong>$1/$3 Challenge</strong> is her latest mission. The goal is $10,000 in profit from the ground up. Next year? Back to tournaments.</p>
+        <div class="bio-stats">
+          <div class="bio-stat">
+            <span class="bio-stat-value">13</span>
+            <span class="bio-stat-label">Years as a Pro</span>
+          </div>
+          <div class="bio-stat">
+            <span class="bio-stat-value">$200</span>
+            <span class="bio-stat-label">Highest Stakes (BB)</span>
+          </div>
+          <div class="bio-stat">
+            <span class="bio-stat-value">808</span>
+            <span class="bio-stat-label">Hawaiʻi Roots</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="connect-section">
+    <div class="connect-grid">
+      <div class="connect-card">
+        <div class="card-glow glow-green"></div>
+        <div class="connect-card-icon">👋</div>
+        <h3>Follow the Journey</h3>
+        <p>Get updates, session highlights, and behind-the-scenes content as the challenge unfolds.</p>
+        <div class="social-buttons">
+          <a href="https://instagram.com/luckylindsay808" target="_blank" rel="noopener" class="social-btn instagram-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            Instagram
+          </a>
+          <a href="https://youtube.com/@luckylindsay" target="_blank" rel="noopener" class="social-btn youtube-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            YouTube
+          </a>
+        </div>
+      </div>
+      <div class="connect-card">
+        <div class="card-glow glow-blue"></div>
+        <div class="connect-card-icon">📬</div>
+        <h3>Stay in the Loop</h3>
+        <p>Subscribe to get notified when I post a new session update or hit a major milestone.</p>
+        <form id="email-form">
+          <div class="email-input-row">
+            <input type="email" placeholder="your@email.com" id="email-input" required />
+            <button type="submit">Subscribe</button>
+          </div>
+          <p class="email-disclaimer">No spam. Just poker updates.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="about-section" id="about">
+    <div class="about-card">
+      <div class="section-eyebrow">The Challenge</div>
+      <h2>What is the <span>$1/$3 Challenge?</span></h2>
+      <p>Starting from scratch at a $1/$3 No-Limit Hold'em table, the mission is simple: grind my way to $10,000 in pure profit. No shortcuts, no reloads — just reads, discipline, and relentless consistency. Every session is tracked and shared here so you can follow the journey in real time.</p>
+      <div class="about-chips">
+        <span class="chip">$1/$3 No-Limit Hold'em</span>
+        <span class="chip">$10,000 profit goal</span>
+        <span class="chip">Started May 29, 2026</span>
+        <span class="chip">Every session tracked</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span class="f-brand">$1/$3 Poker Challenge</span>
+    <p>Updated after each session · Started May 29, 2026</p>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ================================================================
+    // SESSION DATA — add a new line here after every session you play
+    // Format:  { date: 'YYYY-MM-DD', hours: 3.5, profit: 250 },
+    // Loss:    { date: 'YYYY-MM-DD', hours: 4,   profit: -180 },
+    // ================================================================
+    const sessions = [
+      // { date: '2026-05-29', hours: 4, profit: 250 },
+    ];
+
+    const GOAL = 10000;
+    const START_DATE = new Date('2026-05-29T00:00:00');
+
+    const totalProfit = sessions.reduce((sum, s) => sum + s.profit, 0);
+    const days        = Math.floor((new Date() - START_DATE) / 864e5);
+    const pct         = Math.min((totalProfit / GOAL) * 100, 100);
+    const remaining   = Math.max(GOAL - totalProfit, 0);
+    const bestSession = sessions.length ? Math.max(...sessions.map(s => s.profit)) : null;
+
+    const fmt  = n => (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString('en-US');
+    const fmtD = d => d + (d === 1 ? ' day' : ' days');
+
+    document.getElementById('profit-display').textContent    = fmt(totalProfit);
+    document.getElementById('days-display').textContent      = fmtD(days);
+    document.getElementById('remaining-display').textContent = fmt(remaining);
+    document.getElementById('sessions-display').textContent  = sessions.length;
+    document.getElementById('best-session-note').textContent = bestSession !== null ? 'Best: ' + fmt(bestSession) : 'Best: —';
+    document.getElementById('progress-current').textContent  = fmt(totalProfit);
+    document.getElementById('pct-display').textContent       = pct.toFixed(1) + '% complete';
+    document.getElementById('remaining-inline').textContent  = fmt(remaining) + ' remaining';
+    document.getElementById('log-count').textContent         = sessions.length + ' session' + (sessions.length !== 1 ? 's' : '') + ' logged';
+
+    setTimeout(() => { document.getElementById('progress-fill').style.width = Math.max(pct, 0.2) + '%'; }, 400);
+
+    if (sessions.length > 0) {
+      const tbody = document.getElementById('session-tbody');
+      tbody.innerHTML = '';
+      let running = 0;
+      const chron = [...sessions].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const withRunning = chron.map((s, i) => { running += s.profit; return { ...s, running, num: i + 1 }; }).reverse();
+      withRunning.forEach(s => {
+        const plClass = s.profit >= 0 ? 'profit-pos' : 'profit-neg';
+        const rtClass = s.running >= 0 ? 'running-pos' : 'running-neg';
+        const dateStr = new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        tbody.innerHTML += `<tr><td>#${s.num}</td><td>${dateStr}</td><td>${s.hours}h</td><td class="${plClass}">${fmt(s.profit)}</td><td class="running-total ${rtClass}">${fmt(s.running)}</td></tr>`;
+      });
+
+      document.getElementById('chart-empty').style.display = 'none';
+      const canvas = document.getElementById('profitChart');
+      canvas.style.display = 'block';
+      let run = 0;
+      const labels = [new Date(START_DATE).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })];
+      const data   = [0];
+      chron.forEach(s => { run += s.profit; labels.push(new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })); data.push(run); });
+      const ctx  = canvas.getContext('2d');
+      const grad = ctx.createLinearGradient(0, 0, 0, 300);
+      grad.addColorStop(0, 'rgba(0,200,150,0.25)');
+      grad.addColorStop(1, 'rgba(0,200,150,0)');
+      new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Running Profit', data, borderColor: '#00c896', borderWidth: 2.5, pointBackgroundColor: '#00c896', pointRadius: 5, pointHoverRadius: 7, fill: true, backgroundColor: grad, tension: 0.35 }] },
+        options: { responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + fmt(c.parsed.y) } } }, scales: { x: { grid: { color: '#f0f0f0' }, ticks: { font: { family: 'Plus Jakarta Sans', size: 12 }, color: '#bbb' } }, y: { grid: { color: '#f0f0f0' }, ticks: { font: { family: 'Plus Jakarta Sans', size: 12 }, color: '#bbb', callback: v => '$' + v.toLocaleString() } } } }
+      });
+    }
+
+    function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2800); }
+
+    function shareChallenge() {
+      const d = { title: '$1/$3 Poker Challenge — Road to $10,000', text: 'Follow my poker grind from $1/$3 to $10,000 in profit!', url: window.location.href };
+      if (navigator.share) { navigator.share(d).catch(() => {}); }
+      else { navigator.clipboard.writeText(window.location.href).then(() => showToast('✅ Link copied to clipboard!')).catch(() => showToast('🔗 ' + window.location.href)); }
+    }
+
+    document.getElementById('email-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('email-input').value.trim();
+      if (!email) return;
+      window.location.href = 'mailto:malukido808@gmail.com?subject=' + encodeURIComponent('Subscribe me to $1/$3 Poker Challenge updates') + '&body=' + encodeURIComponent('Hey! Please add ' + email + ' to your update list.');
+      this.innerHTML = '<div style="background:#f0fdf9;border:1.5px solid #00c896;border-radius:14px;padding:14px 18px;font-size:.88rem;font-weight:600;color:#065f46;">✅ Thanks! Your email app should open — just hit send.</div>';
+    });
+  </script>
+</body>
+</html>
